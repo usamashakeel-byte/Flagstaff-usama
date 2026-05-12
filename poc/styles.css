@@ -5661,11 +5661,28 @@ body.mode-hero .conv__stream {
   background: #fafafe;
   padding: 56px 48px;
   position: relative;
-  overflow: hidden;
+  /* Visible overflow so the drawer can poke past the section's right
+     and bottom edges. Splash 1 and 3 keep their own internal overflow
+     so they aren't affected. */
+  overflow: visible;
   isolation: isolate;
   display: flex;
   flex-direction: column;
   gap: 32px;
+  border-radius: 28px;
+  background-clip: padding-box;
+}
+/* Splash 2 needs the right container chain to allow overflow so the
+   drawer's negative right/bottom margins actually become visible. */
+.splash__right:has(.splash2-block),
+.splash__right-stage:has(.splash2-block),
+.splash__right-stage > .splash__pane:has(.splash2-block) {
+  overflow: visible;
+}
+.splash__right:has(.splash2-block) {
+  /* Keep the rounded mask on the section card behind splash 2; the
+     drawer floats above it, but the section background must not bleed. */
+  background-clip: padding-box;
 }
 .splash2-canvas {
   position: absolute; inset: 0;
@@ -5715,15 +5732,23 @@ body.mode-hero .conv__stream {
   z-index: 2;
   flex: 1;
   min-height: 0;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* The drawer is intentionally larger than its container — it extends
+     past the right and bottom edges of the splash section so it reads as
+     "a long panel that doesn't quite fit." Padding stays generous, and
+     the negative margins push the surface beyond the parent on the
+     overflowing sides. */
+  margin-right: -120px;
+  margin-bottom: -100px;
+  background: #fff;
   border: 1px solid var(--border-subtle);
-  border-radius: 22px;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.10);
-  padding: 28px 32px 32px;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
+  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.12);
+  padding: 32px 36px 40px;
   display: flex; flex-direction: column;
-  gap: 22px;
+  gap: 24px;
   overflow: hidden;
   transition: opacity 360ms var(--ease-standard);
 }
