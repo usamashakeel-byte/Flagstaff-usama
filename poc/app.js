@@ -1005,14 +1005,18 @@ function xProfilePreview(profile) {
 }
 
 // Twitter white-mode profile header — read as if pasted from twitter.com.
+// Brand/individual accounts get their own banner + avatar assets.
 function xProfileHeader(profile) {
   const verified = profile.verified
     ? el('span', { class: 'x-header__verified', 'aria-label': 'Verified', html: icon('i-check') })
     : null;
+  const isBrand = state.accountType === 'brand';
+  const bannerSrc  = isBrand ? '/BannerBrand.jpeg'  : '/Banner.jpeg';
+  const avatarSrc  = isBrand ? '/ProfileBrand.jpeg' : '/Profile.png';
 
   const card = el('div', { class: 'x-header' }, [
-    el('div', { class: 'x-header__banner' }),
-    el('div', { class: 'x-header__avatar' }),
+    el('div', { class: 'x-header__banner', style: `background-image: url('${bannerSrc}');` }),
+    el('div', { class: 'x-header__avatar', style: `background-image: url('${avatarSrc}');` }),
     el('div', { class: 'x-header__body' }, [
       el('div', { class: 'x-header__name' }, [
         document.createTextNode(profile.displayName || profile.name),
@@ -1107,10 +1111,13 @@ function stat(value, label) {
 }
 
 function xProfilePreviewEmpty(profile) {
+  const isBrand = state.accountType === 'brand';
+  const bannerSrc = isBrand ? '/BannerBrand.jpeg'  : '/Banner.jpeg';
+  const avatarSrc = isBrand ? '/ProfileBrand.jpeg' : '/Profile.png';
   const card = el('div', { class: 'preview preview--empty' }, [
-    el('div', { class: 'preview__banner' }),
+    el('div', { class: 'preview__banner', style: `background-image: url('${bannerSrc}');` }),
     el('div', { class: 'preview__identity' }, [
-      el('div', { class: 'preview__avatar' }),
+      el('div', { class: 'preview__avatar', style: `background-image: url('${avatarSrc}');` }),
       el('div', { class: 'preview__name-row' }, [
         el('div', { class: 'preview__name' }, profile.displayName || profile.name),
         el('div', { class: 'preview__handle' }, profile.handle),
@@ -2455,6 +2462,8 @@ async function step_post_directions() {
 
     const displayName = state.brand.displayName || state.brand.name || 'You';
     const handle      = state.brand.handle      || '@you';
+    const isBrand     = state.accountType === 'brand';
+    const avatarSrc   = isBrand ? '/ProfileBrand.jpeg' : '/Profile.png';
 
     directions.forEach((d, i) => {
       const card = el('div', {
@@ -2478,7 +2487,7 @@ async function step_post_directions() {
       }, [
         // Author row — avatar + name + verified + handle + dot + time.
         el('div', { class: 'direction-card__author' }, [
-          el('span', { class: 'direction-card__avatar' }),
+          el('span', { class: 'direction-card__avatar', style: `background-image: url('${avatarSrc}');` }),
           el('div', { class: 'direction-card__id' }, [
             el('div', { class: 'direction-card__name-row' }, [
               document.createTextNode(displayName),
@@ -2550,22 +2559,21 @@ async function step_post_directions() {
   });
 }
 
-// Mock image generation — a gradient placeholder with a shimmer animation
-// that "resolves" into a labelled visual after a short delay. Each direction
-// gets a different gradient/icon to suggest distinct generated art.
+// Mock image generation — uses real post imagery for the demo. Each
+// direction maps to a different post visual; the loading shimmer plays
+// briefly so the card reads as "Scout just generated this."
 function directionImage(d, i) {
-  const palettes = [
-    { gradient: 'linear-gradient(135deg, #fde68a 0%, #f59e0b 60%, #b45309 100%)', icon: 'i-flame' },
-    { gradient: 'linear-gradient(135deg, #c7d2fe 0%, #818cf8 60%, #4f46e5 100%)', icon: 'i-bolt' },
-    { gradient: 'linear-gradient(135deg, #bbf7d0 0%, #34d399 60%, #047857 100%)', icon: 'i-mountain' },
+  const visuals = [
+    { src: '/PostA.jpeg', tint: 'linear-gradient(135deg, #fde68a 0%, #f59e0b 60%, #b45309 100%)' },
+    { src: '/PostB.jpeg', tint: 'linear-gradient(135deg, #c7d2fe 0%, #818cf8 60%, #4f46e5 100%)' },
+    { src: '/PostC.jpeg', tint: 'linear-gradient(135deg, #bbf7d0 0%, #34d399 60%, #047857 100%)' },
   ];
-  const p = palettes[i % palettes.length];
-  const wrap = el('div', { class: 'direction-card__image direction-card__image--loading', style: `background: ${p.gradient};` }, [
+  const v = visuals[i % visuals.length];
+  const wrap = el('div', {
+    class: 'direction-card__image direction-card__image--loading',
+    style: `background-image: url('${v.src}'), ${v.tint}; background-size: cover; background-position: center;`,
+  }, [
     el('div', { class: 'direction-card__image-shimmer' }),
-    el('div', { class: 'direction-card__image-label' }, [
-      el('span', { class: 'direction-card__image-icon', html: icon(p.icon) }),
-      document.createTextNode('Generated visual'),
-    ]),
   ]);
   // After a short delay, drop the loading shimmer.
   setTimeout(() => wrap.classList.remove('direction-card__image--loading'), 900 + i * 300);
@@ -2632,9 +2640,11 @@ async function step_edit_publish() {
 }
 
 function renderPublishedPost(body) {
+  const isBrand = state.accountType === 'brand';
+  const avatarSrc = isBrand ? '/ProfileBrand.jpeg' : '/Profile.png';
   const card = el('div', { class: 'success-post success-post--published' }, [
     el('div', { class: 'success-post__head' }, [
-      el('div', { class: 'success-post__avatar' }),
+      el('div', { class: 'success-post__avatar', style: `background-image: url('${avatarSrc}');` }),
       el('div', { class: 'success-post__id' }, [
         el('div', { class: 'success-post__name-row' }, [
           el('span', { class: 'success-post__name' }, state.brand.displayName || state.brand.name),
