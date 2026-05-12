@@ -6063,7 +6063,7 @@ body.mode-hero .conv__stream {
   /* A half-circle of post cards. The wheel pivots below the section so
      only the upper arc is visible; the wheel rotates slowly while each
      tile counter-rotates so it stays upright. */
-  --wheel-radius: 560px;   /* larger orbit — more cards visible at once */
+  --wheel-radius: 480px;   /* slightly tighter orbit than 560 — cards sit closer */
   --tile-w: 308px;
   --tile-h: 385px;
   --wheel-duration: 120s;  /* very slow rotation, reads as ambient drift */
