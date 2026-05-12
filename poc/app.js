@@ -1012,9 +1012,6 @@ function xProfileHeader(profile) {
 
   const card = el('div', { class: 'x-header' }, [
     el('div', { class: 'x-header__banner' }),
-    el('div', { class: 'x-header__action-row' }, [
-      el('button', { class: 'x-header__follow', type: 'button', disabled: 'true' }, 'Following'),
-    ]),
     el('div', { class: 'x-header__avatar' }),
     el('div', { class: 'x-header__body' }, [
       el('div', { class: 'x-header__name' }, [
