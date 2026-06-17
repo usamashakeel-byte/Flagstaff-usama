@@ -443,7 +443,7 @@ async function typewriterInto(node, text, baseSpeed = 14) {
   scrollDown();
 }
 
-function userMsg(text, { options = null } = {}) {
+function userMsg(text, { options = null, _restartStep = -1 } = {}) {
   // User messages render as a white right-aligned bubble. No avatar / name —
   // the bubble itself is the differentiation from Scout's plain-text turns.
   const bubble = el('div', { class: 'msg__bubble' }, text);
@@ -462,15 +462,26 @@ function userMsg(text, { options = null } = {}) {
       const cancelBtn = el('button', { class: 'msg__edit-cancel', type: 'button' }, 'Cancel');
       const pills = options.map((opt) => {
         const btn = el('button', {
-          class: 'qreply' + (opt === text ? ' qreply--chosen' : ''),
+          class: 'qreply' + (opt === bubble.textContent ? ' qreply--chosen' : ''),
         }, opt);
         btn.addEventListener('click', () => {
-          bubble.textContent = opt;
           picker.remove();
           bubble.style.display = '';
           editBtn.style.display = '';
-          // Update stored text so future edits reflect the new value
-          editBtn._options = options;
+          // If same option picked, no replay needed — just close
+          if (opt === bubble.textContent) return;
+          bubble.textContent = opt;
+          // Remove all stream nodes after this message node
+          const streamEl = document.querySelector('#stream');
+          while (streamEl.lastChild && streamEl.lastChild !== node) {
+            streamEl.removeChild(streamEl.lastChild);
+          }
+          // Queue the new answer and re-run from the step that produced this message
+          _preAnswers.length = 0;
+          _preAnswers.push(opt);
+          _resumeFrom = _restartStep - 1;
+          delete stream.dataset.started;
+          runConversation();
         });
         return btn;
       });
@@ -518,6 +529,7 @@ function userMsg(text, { options = null } = {}) {
   });
 
   const node = el('div', { class: 'msg msg--user' }, [bubble, editBtn]);
+  node._restartStep = _restartStep;
   return append(node);
 }
 
@@ -530,7 +542,16 @@ function userMsg(text, { options = null } = {}) {
 // visible; the chosen one is highlighted, the rest dim but stay clickable so
 // the user can change their mind. The choice commits after a short idle.
 function quickReplies(options, { primaryIndex = -1, settleMs = 1500 } = {}) {
+  // If a pre-answer exists (from an edit-replay), auto-pick it immediately.
+  if (_preAnswers.length > 0) {
+    const ans = _preAnswers.shift();
+    const stepAtCall = _currentStep;
+    const bubbleNode = userMsg(ans, { options, _restartStep: stepAtCall });
+    return Promise.resolve(ans);
+  }
+
   return new Promise((resolve) => {
+    const stepAtCall = _currentStep;
     const wrap = el('div', { class: 'qreplies' });
     let activeBtn = null;
     let bubble = null;
@@ -544,7 +565,7 @@ function quickReplies(options, { primaryIndex = -1, settleMs = 1500 } = {}) {
         c.classList.toggle('qreply--dim', c !== btn);
       });
       if (!bubble) {
-        bubble = userMsg(opt, { options });
+        bubble = userMsg(opt, { options, _restartStep: stepAtCall });
       } else {
         const t = bubble.querySelector('.msg__bubble');
         if (t) t.textContent = opt;
@@ -4165,8 +4186,10 @@ async function runConversation() {
   const skip = (n) => _resumeFrom >= n; // true = this step is already done
 
   // Act 1 — Greet and connect.
+  _currentStep = 0;
   if (!skip(0)) { await step1_opening(); saveCheckpoint(0); }
 
+  _currentStep = 1;
   if (!skip(1)) {
     const xPath = await step5_x_connect();
     if (xPath === 'connected-scan') await step6_profile_scan();
@@ -4174,25 +4197,33 @@ async function runConversation() {
   }
 
   // Act 2 — Materials, then the first drawer review (Scout's read of the brand).
+  _currentStep = 2;
   if (!skip(2)) { await stepMaterials(); saveCheckpoint(2); }
+  _currentStep = 3;
   if (!skip(3)) { await step_brand_review_first(); saveCheckpoint(3); }
 
   // Act 3 — Topics/products + goals.
+  _currentStep = 4;
   if (!skip(4)) {
     if (state.accountType === 'brand') await step3_product_lines_brand_only();
     else                               await step_topics_individual();
     saveCheckpoint(4);
   }
+  _currentStep = 5;
   if (!skip(5)) { await step4_goals(); saveCheckpoint(5); }
 
   // Act 4 — Market scan, audience inference.
+  _currentStep = 6;
   if (!skip(6)) { await step7_intel_scan(); saveCheckpoint(6); }
+  _currentStep = 7;
   if (!skip(7)) { await step_audience_infer(); saveCheckpoint(7); }
 
   // Tone
+  _currentStep = 8;
   if (!skip(8)) { await step_tone_voice(); saveCheckpoint(8); }
 
   // Act 5 — Merged directions → drafts → publish (or save for later).
+  _currentStep = 9;
   const iterChoice = await step_post_directions();
   if (iterChoice === 'later') {
     await scoutMsg(
@@ -4309,6 +4340,12 @@ const splashState = { index: 0, dismissed: false };
 // Index of the last completed step; -1 means fresh start.
 // Set by boot() when restoring a checkpoint.
 let _resumeFrom = -1;
+
+// Tracks which runConversation step block is currently executing (updated before each step).
+let _currentStep = -1;
+
+// Pre-answer queue: when non-empty, quickReplies auto-picks the first item.
+const _preAnswers = [];
 
 function saveCheckpoint(step) {
   try {
