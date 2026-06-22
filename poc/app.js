@@ -2408,10 +2408,32 @@ function buildRecentActivity(isBrand) {
     const cards = Array.from(carousel.querySelectorAll('.success-post'));
 
     if (!expanded) {
-      // Collapse: drop back to the centred carousel (instant, no morph).
+      // Collapse: reverse morph — cards glide from the grid back into the carousel.
+      const first = cards.map(c => c.getBoundingClientRect());     // grid rects
       carousel.classList.remove('is-expanded');
       cards.forEach(c => { c.style.transform = ''; c.style.opacity = ''; c.style.filter = ''; c.style.transition = ''; });
-      centerMiddle();
+      centerMiddle();                                              // scroll-center + set active/near classes
+      void carousel.offsetWidth;
+      // Measure each card's resting opacity and its transform-none layout box.
+      const rest = cards.map(c => ({ opacity: getComputedStyle(c).opacity }));
+      cards.forEach(c => { c.style.transform = 'none'; });
+      cards.forEach((c, i) => { rest[i].rect = c.getBoundingClientRect(); });
+      cards.forEach(c => { c.style.transform = ''; });
+      cards.forEach((c, i) => {
+        const L = rest[i].rect;
+        const dx = first[i].left - L.left;
+        const dy = first[i].top - L.top;
+        const s  = L.width ? first[i].width / L.width : 1;
+        c.animate([
+          { transformOrigin: 'top left', transform: `translate(${dx}px, ${dy}px) scale(${s})`, opacity: 1 },
+          { transformOrigin: 'top left', transform: 'none', opacity: rest[i].opacity },
+        ], {
+          duration: 850,
+          delay: i * 60,
+          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+          fill: 'backwards',
+        });
+      });
       return;
     }
 

@@ -1963,7 +1963,7 @@ a { color: var(--text-link); text-decoration: none; }
 
 /* ── Recent posts: coverflow carousel → expands into a 2-col grid ── */
 .dash__recent-carousel {
-  --post-w: 370px;             /* focused card width (≈ half the section, like the reference) */
+  --post-w: 450px;             /* focused card width (≈ half the section, like the reference) */
   --peek: 120px;               /* how much of each neighbour shows beyond the centre */
   display: flex;
   overflow-x: auto;
