@@ -2026,7 +2026,11 @@ a { color: var(--text-link); text-decoration: none; }
   opacity: 1;
   filter: none;
   z-index: auto;
+  align-self: stretch;          /* equal height within each row */
+  height: 100%;
 }
+/* Pin the per-post action to the bottom so buttons line up across the row */
+.dash__recent-carousel.is-expanded .success-post__analytics { margin-top: auto; }
 
 /* "View posts" expand toggle under the carousel */
 .dash__recent-toggle {

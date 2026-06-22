@@ -2401,25 +2401,51 @@ function buildRecentActivity(isBrand) {
     el('span', { class: 'dash__recent-toggle-label' }, 'View posts'),
     el('span', { class: 'dash__recent-toggle-arrow', html: icon('i-chevron-down') }),
   ]);
+  // FLIP morph via the Web Animations API: record where each card is, switch
+  // to the grid layout, measure the new spot, then animate from old → new so
+  // the cards visibly realign from the carousel into the 2-column grid.
+  function morphTo(expanded) {
+    const cards = Array.from(carousel.querySelectorAll('.success-post'));
+
+    if (!expanded) {
+      // Collapse: drop back to the centred carousel (instant, no morph).
+      carousel.classList.remove('is-expanded');
+      cards.forEach(c => { c.style.transform = ''; c.style.opacity = ''; c.style.filter = ''; c.style.transition = ''; });
+      centerMiddle();
+      return;
+    }
+
+    // Expand: capture start rects + which cards were visible, switch to grid,
+    // measure end rects, then play the morph.
+    const wasVisible = cards.map(c => c.classList.contains('is-active') || c.classList.contains('is-near'));
+    const first = cards.map(c => c.getBoundingClientRect());
+
+    carousel.classList.add('is-expanded');
+    cards.forEach(c => { c.style.transform = ''; c.style.opacity = ''; c.style.filter = ''; c.style.transition = ''; });
+    void carousel.offsetWidth;                       // force reflow into grid layout
+    const last = cards.map(c => c.getBoundingClientRect());
+
+    cards.forEach((c, i) => {
+      const dx = first[i].left - last[i].left;
+      const dy = first[i].top - last[i].top;
+      const s  = last[i].width ? first[i].width / last[i].width : 1;
+      c.animate([
+        { transformOrigin: 'top left', transform: `translate(${dx}px, ${dy}px) scale(${s})`, opacity: wasVisible[i] ? 1 : 0 },
+        { transformOrigin: 'top left', transform: 'none', opacity: 1 },
+      ], {
+        duration: 850,
+        delay: i * 60,
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        fill: 'backwards',                           // hold the start pose during the stagger delay
+      });
+    });
+  }
+
   toggle.addEventListener('click', () => {
-    const expanded = carousel.classList.toggle('is-expanded');
+    const expanded = !carousel.classList.contains('is-expanded');
     toggle.classList.toggle('is-open', expanded);
     toggle.querySelector('.dash__recent-toggle-label').textContent = expanded ? 'Hide posts' : 'View posts';
-    if (expanded) {
-      const cards = Array.from(carousel.querySelectorAll('.success-post'));
-      cards.forEach((card, i) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(10px)';
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          card.style.transition = `transform 0.4s var(--ease-standard) ${i * 0.05}s, opacity 0.4s ease ${i * 0.05}s`;
-          card.style.opacity = '';
-          card.style.transform = '';
-        }));
-      });
-    } else {
-      carousel.querySelectorAll('.success-post').forEach(c => { c.style.transition = ''; });
-      requestAnimationFrame(updateActive);
-    }
+    morphTo(expanded);
   });
 
   return el('div', { class: 'dash__recent' }, [
