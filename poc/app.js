@@ -332,6 +332,18 @@ function setCrumbs(parts) {
   });
 }
 
+// Remember which app page the user is on ('home' | 'dash') so a refresh
+// restores the same page (defaults to home when reaching the app).
+function saveAppView(view) {
+  try {
+    const s = JSON.parse(sessionStorage.getItem('fs_session') || '{}');
+    s.view = view;
+    s.name = s.name || state.user.name || 'Guest';
+    s.accountType = state.accountType || s.accountType || 'individual';
+    sessionStorage.setItem('fs_session', JSON.stringify(s));
+  } catch (e) {}
+}
+
 /* =========================================================================
    3. MESSAGE RENDERERS
    ========================================================================= */
@@ -2203,6 +2215,7 @@ function goAnalytics(post) {
   initDashScout();
   showView('view-dash');
   setCrumbs(post ? ['Dashboard', 'Post analytics'] : ['Dashboard']);
+  saveAppView('dash');
 }
 
 function buildSnapshot(isBrand) {
@@ -4591,8 +4604,8 @@ function enterApp() {
   const chipName = $('.profile-chip__name');
   if (chipName) chipName.textContent = state.user.name || 'Guest';
 
-  // Update session to record the user reached the dashboard
-  try { sessionStorage.setItem('fs_session', JSON.stringify({ name: state.user.name || 'Guest', accountType: state.accountType || 'individual', view: 'dash' })); } catch (e) {}
+  // Record that the user reached the app, landing on the Home page by default
+  try { sessionStorage.setItem('fs_session', JSON.stringify({ name: state.user.name || 'Guest', accountType: state.accountType || 'individual', view: 'home' })); } catch (e) {}
 
   renderHome();
   showView('view-home');
@@ -4743,6 +4756,7 @@ function bindDemoControls() {
       renderHome();
       showView('view-home');
       setCrumbs(['Home']);
+      saveAppView('home');
     });
   }
 }
@@ -5598,14 +5612,21 @@ function boot() {
     if (profileChip) profileChip.style.visibility = '';
     try { localStorage.setItem(SPLASH_FLAG_KEY, '1'); } catch (e) {}
 
-    if (savedSession.view === 'dash') {
+    // Restore the app page the user was on (defaults to Home).
+    if (savedSession.view === 'home' || savedSession.view === 'dash') {
       state.accountType = savedSession.accountType || 'individual';
       applyUserIdentity();
       document.body.classList.remove('mode-onboarding');
       document.body.classList.add('mode-app');
-      setCrumbs(['Home']);
-      try { renderDashboard(); initDashScout(); } catch(e) { console.error('[dash render error]', e); }
-      showView('view-dash');
+      if (savedSession.view === 'dash') {
+        setCrumbs(['Dashboard']);
+        try { renderDashboard(); initDashScout(); } catch(e) { console.error('[dash render error]', e); }
+        showView('view-dash');
+      } else {
+        setCrumbs(['Home']);
+        try { renderHome(); } catch(e) { console.error('[home render error]', e); }
+        showView('view-home');
+      }
       return;
     }
 
