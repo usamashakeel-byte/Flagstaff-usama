@@ -1811,23 +1811,6 @@ function renderHome() {
   // ───── Recent activity ────────────────────────────────────────────────
   wrap.appendChild(buildRecentActivity(isBrand));
 
-  // ───── Scout's pulse ──────────────────────────────────────────────────
-  wrap.appendChild(el('div', { class: 'dash__pulse' }, [
-    el('div', { class: 'dash__pulse-head' }, [
-      el('span', { class: 'dash__pulse-mark', html: icon('i-logo') }),
-      el('h3', { class: 'dash__pulse-title' }, "Scout's pulse"),
-      el('span', { class: 'dash__pulse-status' }, [
-        el('span', { class: 'dash__pulse-dot' }),
-        document.createTextNode('Live'),
-      ]),
-    ]),
-    el('div', { class: 'dash__pulse-grid' }, [
-      buildPulseTrend(isBrand),
-      buildPulseWindow(isBrand),
-      buildPulseSuggestion(isBrand),
-    ]),
-  ]));
-
   home.appendChild(wrap);
   initHomeScout();
 }
@@ -2020,46 +2003,42 @@ function appendScoutReply(inner, label, replyMap) {
 
 function initHomeScout() {
   const isBrand = state.accountType === 'brand';
+  const firstName = (state.user.name || 'there').split(/\s+/)[0];
 
-  const cards = isBrand ? [
-    {
-      title: 'Right now',
-      subtitle: 'Trending opportunity',
-      status: 'Live',
-      isActive: true,
-      sections: [
-        { type: 'chips', eyebrow: 'TRENDING', chips: ['#SouthAsianHeritageWeek', 'Heritage content', 'Cultural storytelling'] },
-        { type: 'topics', eyebrow: 'SIGNAL STRENGTH', bars: [
-          { label: 'Personal stories', pct: '78%' },
-          { label: 'Brand content',    pct: '24%' },
-          { label: 'Product posts',    pct: '41%' },
-        ]},
-        { type: 'peak', eyebrow: 'PEAK WINDOW TODAY', track: { left: '50%', width: '17%' }, body: '2–4pm PKT · 3 drafts ready' },
-      ],
-      chips: ['Draft a thread →', 'Show me the data'],
-    },
+  // ── Populate the fixed panel header ──────────────────────────────────
+  const hdr = $('#home-scout-header');
+  if (hdr) {
+    hdr.innerHTML = '';
+    hdr.appendChild(el('span', { class: 'sp-header__avatar' }, [
+      el('span', { html: icon('i-logo') }),
+    ]));
+    hdr.appendChild(el('div', { class: 'sp-header__text' }, [
+      el('div', { class: 'sp-header__name' }, 'Scout'),
+      el('div', { class: 'sp-header__status' }, [
+        el('span', { class: 'sp-header__dot' }),
+        document.createTextNode('Active now'),
+      ]),
+    ]));
+  }
+
+  // ── Default text-based suggestions, by profile ────────────────────────
+  const messages = isBrand ? [
+    `Here's what I'm seeing for you right now, ${firstName}.`,
+    `#SouthAsianHeritageWeek is trending at 4.2× week-over-week — and it matches your themes. Personal stories are getting 3× more saves than brand content.`,
+    `Your peak window today is 2–4pm PKT. I've got 3 drafts ready to go.`,
   ] : [
-    {
-      title: 'Right now',
-      subtitle: 'Spiking conversation',
-      status: 'Live',
-      isActive: true,
-      sections: [
-        { type: 'chips', eyebrow: 'TOPIC', chips: ['AI tooling debate', 'Nuanced takes', 'Design process'] },
-        { type: 'topics', eyebrow: 'ENGAGEMENT BY FORMAT', bars: [
-          { label: 'Nuanced takes',  pct: '85%' },
-          { label: 'Hot takes',      pct: '34%' },
-          { label: 'Tutorial posts', pct: '52%' },
-        ]},
-        { type: 'peak', eyebrow: 'PEAK WINDOW TODAY', track: { left: '50%', width: '17%' }, body: '2–4pm PKT · 3 drafts ready' },
-      ],
-      chips: ['Draft a follow-up →', 'Show the trend'],
-    },
+    `Here's what I'm seeing for you right now, ${firstName}.`,
+    `The AI tooling debate is spiking — nuanced takes are pulling 5.6× more saves than hot takes. Your last post landed right in that sweet spot.`,
+    `Your peak window today is 2–4pm PKT. I've got 3 drafts ready to go.`,
   ];
 
+  const suggestions = isBrand
+    ? ['Draft a thread', 'Show me the data', 'See my drafts']
+    : ['Draft a follow-up', 'Show the trend', 'See my drafts'];
+
   const replyMap = {
-    'Draft a thread →': `Here's a thread opener: "Heritage isn't a mood board. It's a body of knowledge being lost one generation at a time. Here's what I've been trying to learn…" Want the full 3-post thread?`,
-    'Draft a follow-up →': `Here's an opener: "The 'AI replaces designers' take is from people who've never shipped under a deadline. Here's what actually happens in the room…" Build out the full post?`,
+    'Draft a thread': `Here's a thread opener: "Heritage isn't a mood board. It's a body of knowledge being lost one generation at a time. Here's what I've been trying to learn…" Want the full 3-post thread?`,
+    'Draft a follow-up': `Here's an opener: "The 'AI replaces designers' take is from people who've never shipped under a deadline. Here's what actually happens in the room…" Build out the full post?`,
     'Show me the data': `#SouthAsianHeritageWeek is up 4.2× w/w. Personal stories are getting 3× more saves than brand content right now. Your last post hit exactly this note.`,
     'Show the trend': `The AI tooling debate is seeing 5.6× saves on nuanced takes vs. hot takes. Your last post landed in the sweet spot — a follow-up has strong potential.`,
     'See my drafts': `You have 3 drafts ready: (1) The collaboration post, (2) Tool audit thread, (3) A hot take on briefs. Which feels closest to ready?`,
@@ -2067,60 +2046,138 @@ function initHomeScout() {
     'Remind me later': `Got it — I'll surface this again closer to 2pm PKT.`,
   };
 
-  initScoutPanel('home-scout-inner', 'home-scout-input', 'home-scout-send', cards, replyMap);
+  initScoutChat('home-scout-inner', 'home-scout-input', 'home-scout-send', messages, suggestions, replyMap);
 }
 
 function initDashScout() {
   const isBrand = state.accountType === 'brand';
+  const firstName = (state.user.name || 'there').split(/\s+/)[0];
 
-  const cards = isBrand ? [
-    {
-      title: 'This week\'s insight',
-      subtitle: 'Analytics summary',
-      status: 'Updated now',
-      isActive: true,
-      sections: [
-        { type: 'text', body: 'Bookmarks are your strongest signal — up +38% this month. Posts with visual storytelling drive 2× more saves than copy-only.' },
-        { type: 'topics', eyebrow: 'METRIC BREAKDOWN', bars: [
-          { label: 'Impressions', pct: '72%' },
-          { label: 'Bookmarks',   pct: '91%' },
-          { label: 'Reposts',     pct: '38%' },
-          { label: 'Likes',       pct: '55%' },
-        ]},
-        { type: 'chips', eyebrow: 'GROWING SEGMENT', chips: ['Women 25–34', 'Pakistan', 'UAE'] },
-      ],
-      chips: ['What drove this?', 'Draft for them'],
-    },
+  // ── Populate the fixed panel header ──────────────────────────────────
+  const hdr = $('#dash-scout-header');
+  if (hdr) {
+    hdr.innerHTML = '';
+    hdr.appendChild(el('span', { class: 'sp-header__avatar' }, [
+      el('span', { html: icon('i-logo') }),
+    ]));
+    hdr.appendChild(el('div', { class: 'sp-header__text' }, [
+      el('div', { class: 'sp-header__name' }, 'Scout'),
+      el('div', { class: 'sp-header__status' }, [
+        el('span', { class: 'sp-header__dot' }),
+        document.createTextNode('Active now'),
+      ]),
+    ]));
+  }
+
+  // ── Initial conversation messages ─────────────────────────────────────
+  const messages = isBrand ? [
+    `Here's your weekly pulse, ${firstName}.`,
+    `Bookmarks are your strongest signal — up +38% this month. Posts with visual storytelling drive 2× more saves than copy-only.`,
+    `Metric breakdown: Impressions 72% · Bookmarks 91% · Reposts 38% · Likes 55%.`,
+    `Fastest-growing segment this week: Women 25–34 · Pakistan · UAE.`,
   ] : [
-    {
-      title: 'This week\'s insight',
-      subtitle: 'Analytics summary',
-      status: 'Updated now',
-      isActive: true,
-      sections: [
-        { type: 'text', body: 'Bookmarks are your strongest signal — up +34% this month. Your nuanced takes on AI are driving 3× more saves than your tutorial posts.' },
-        { type: 'topics', eyebrow: 'METRIC BREAKDOWN', bars: [
-          { label: 'Impressions', pct: '65%' },
-          { label: 'Bookmarks',   pct: '88%' },
-          { label: 'Replies',     pct: '42%' },
-          { label: 'Reposts',     pct: '31%' },
-        ]},
-        { type: 'chips', eyebrow: 'GROWING SEGMENT', chips: ['Designers', 'PMs', '25–34 range'] },
-      ],
-      chips: ['What drove this?', 'Write for them'],
-    },
+    `Here's your weekly pulse, ${firstName}.`,
+    `Bookmarks are your strongest signal — up +34% this month. Your nuanced takes on AI are driving 3× more saves than your tutorial posts.`,
+    `Metric breakdown: Impressions 65% · Bookmarks 88% · Replies 42% · Reposts 31%.`,
+    `Fastest-growing segment this week: Designers & PMs · 25–34 range.`,
   ];
 
+  const suggestions = isBrand
+    ? ['What drove this?', 'Draft for them', 'Show trends']
+    : ['What drove this?', 'Write for them', 'Show trends'];
+
   const replyMap = {
-    'What drove this?': `Your bookmark spike tracks with the Heritage Week thread — posts that ask the reader to reflect (not just react) consistently drive 2–3× more saves in your niche.`,
-    'Dig deeper': `Your top-performing post this month had a 85% ER and 34 bookmarks on just 1.4K reach — that's a 2.4% bookmark rate, which is exceptional. Want to reverse-engineer what made it land?`,
+    'What drove this?': `Your bookmark spike tracks with the Heritage Week thread — posts that ask the reader to reflect consistently drive 2–3× more saves in your niche.`,
     'Draft for them': `Here's an angle for your 25–34 Pakistan/UAE audience: "The brief everyone ignores — and why the best projects start with it." Want me to build it out?`,
     'Write for them': `Here's an angle for Designers & PMs: "The 'move fast' culture broke something in how we brief. Here's what I've started doing instead." Want the full draft?`,
-    'Tell me more': `The 25–34 women in Pakistan & UAE segment grew 12% this week, likely driven by the Heritage Week context. They're saving posts about craft, process, and cultural identity at 3× the baseline.`,
-    'Show analytics': `Your Designers & PMs segment is now 31% of your audience. They have a 6.2% avg bookmark rate — highest of any segment. Posts about tooling opinions and process critiques land best.`,
+    'Show trends': isBrand
+      ? `#SouthAsianHeritageWeek is trending at 4.2× week-over-week. It matches your core themes. Best window to post is 2–4 pm PKT today.`
+      : `The AI tooling debate is driving 5.6× saves on nuanced takes. Best window is 9–11 am PKT tomorrow.`,
+    'Tell me more': `The 25–34 women in Pakistan & UAE segment grew 12% this week. They save posts about craft, process, and cultural identity at 3× the baseline.`,
   };
 
-  initScoutPanel('dash-scout-inner', 'dash-scout-input', 'dash-scout-send', cards, replyMap);
+  initScoutChat('dash-scout-inner', 'dash-scout-input', 'dash-scout-send', messages, suggestions, replyMap);
+}
+
+function initScoutChat(innerId, inputId, sendId, messages, suggestions, replyMap) {
+  const inner = $('#' + innerId);
+  const input = $('#' + inputId);
+  const send  = $('#' + sendId);
+  if (!inner || !input || !send) return;
+
+  inner.innerHTML = '';
+
+  // Staggered scout messages
+  messages.forEach((text, i) => {
+    const msg = el('div', { class: 'sp-chat-msg sp-chat-msg--scout' }, [
+      el('div', { class: 'sp-chat-bubble sp-chat-bubble--scout' }, text),
+    ]);
+    msg.style.opacity = '0';
+    inner.appendChild(msg);
+    setTimeout(() => { msg.style.opacity = '1'; }, 120 + i * 160);
+  });
+
+  // Suggestion chips after messages
+  if (suggestions && suggestions.length) {
+    const chipsEl = el('div', { class: 'sp-suggestion-chips' },
+      suggestions.map(s => el('button', { class: 'sp-suggestion-chip', type: 'button' }, s))
+    );
+    chipsEl.style.opacity = '0';
+    inner.appendChild(chipsEl);
+    setTimeout(() => { chipsEl.style.opacity = '1'; }, 120 + messages.length * 160 + 80);
+
+    inner.addEventListener('click', e => {
+      const chip = e.target.closest('.sp-suggestion-chip');
+      if (!chip || chip.disabled) return;
+      const label = chip.textContent.trim();
+      chipsEl.querySelectorAll('.sp-suggestion-chip').forEach(c => { c.disabled = true; });
+      appendUserChatMsg(inner, label);
+      appendScoutChatReply(inner, label, replyMap);
+    });
+  }
+
+  // Composer
+  function sendMsg() {
+    const v = input.value.trim();
+    if (!v) return;
+    input.value = '';
+    send.classList.remove('active');
+    appendUserChatMsg(inner, v);
+    appendScoutChatReply(inner, v, replyMap);
+  }
+  send.onclick = sendMsg;
+  input.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); } };
+  input.oninput = () => send.classList.toggle('active', input.value.trim().length > 0);
+}
+
+function appendUserChatMsg(inner, text) {
+  const msg = el('div', { class: 'sp-chat-msg sp-chat-msg--user' }, [
+    el('div', { class: 'sp-chat-bubble sp-chat-bubble--user' }, text),
+  ]);
+  inner.appendChild(msg);
+  inner.scrollTop = inner.scrollHeight;
+}
+
+function appendScoutChatReply(inner, label, replyMap) {
+  const typing = el('div', { class: 'sp-chat-msg sp-chat-msg--scout' }, [
+    el('div', { class: 'sp-typing-bubble' }, [
+      el('span', { class: 'hmsg__dot' }),
+      el('span', { class: 'hmsg__dot' }),
+      el('span', { class: 'hmsg__dot' }),
+    ]),
+  ]);
+  inner.appendChild(typing);
+  inner.scrollTop = inner.scrollHeight;
+
+  setTimeout(() => {
+    typing.remove();
+    const text = replyMap[label] || 'Got it — let me work on that.';
+    const msg = el('div', { class: 'sp-chat-msg sp-chat-msg--scout' }, [
+      el('div', { class: 'sp-chat-bubble sp-chat-bubble--scout' }, text),
+    ]);
+    inner.appendChild(msg);
+    inner.scrollTop = inner.scrollHeight;
+  }, 1000);
 }
 
 function goAnalytics() {
@@ -2366,26 +2423,20 @@ function renderDashboard() {
   const isBrand = state.accountType === 'brand';
   const firstName = (state.user.name || 'there').split(/\s+/)[0];
 
-  // ── Header ────────────────────────────────────────────────────────────
-  dash.appendChild(el('div', { class: 'dash__header' }, [
-    el('div', { class: 'dash__header-left' }, [
-      el('h1', { class: 'dash__title' }, `Good to have you, ${firstName}.`),
-      el('div', { class: 'dash__header-meta' }, [
-        el('div', { class: 'dash__date-range' }, [
-          el('span', { html: icon('i-cal') }),
-          document.createTextNode('17 Jun – 17 Jul, 2026'),
-        ]),
-        el('span', { class: 'dash__meta-sep' }, '·'),
-        el('span', { class: 'dash__updated' }, 'Updated just now'),
+  // Greeting
+  dash.appendChild(el('div', { class: 'dash__greeting' }, [
+    el('h1', { class: 'dash__title' }, `Good to have you, ${firstName}.`),
+    el('div', { class: 'dash__header-meta' }, [
+      el('div', { class: 'dash__date-range' }, [
+        el('span', { html: icon('i-cal') }),
+        document.createTextNode('17 Jun – 17 Jul, 2026'),
       ]),
-    ]),
-    el('button', { class: 'dash__new-post-btn', type: 'button' }, [
-      el('span', { html: icon('i-pencil') }),
-      document.createTextNode('New post'),
+      el('span', { class: 'dash__meta-sep' }, '·'),
+      el('span', { class: 'dash__updated' }, 'Updated just now'),
     ]),
   ]));
 
-  // ── KPI strip ─────────────────────────────────────────────────────────
+  // KPI strip
   const kpis = isBrand ? [
     { label: 'Impressions',  value: '18,420', delta: '+22%',  up: true  },
     { label: 'Likes',        value: '1,284',  delta: '+14%',  up: true  },
@@ -2411,13 +2462,13 @@ function renderDashboard() {
     ]))
   ));
 
-  // ── Charts row (2-col: reach chart + age breakdown) ───────────────────
+  // Charts row
   dash.appendChild(el('div', { class: 'dash__charts-row' }, [
     buildReachChart(isBrand),
     buildAgeChart(isBrand),
   ]));
 
-  // ── Bottom row (3-col: heatmap + top post + audience) ─────────────────
+  // Analytics row
   dash.appendChild(el('div', { class: 'dash__analytics-row' }, [
     buildHeatmap(),
     buildTopPost(isBrand),

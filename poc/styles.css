@@ -1075,33 +1075,26 @@ a { color: var(--text-link); text-decoration: none; }
 .dash::-webkit-scrollbar { display: none; }
 #view-home, #view-dash { overflow: hidden; }
 
-/* Left panel content — contained, centered, breathing room */
+/* Left 60% panel — full width with breathing room on all sides */
 .scout-layout__main .dash {
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 28px 12px 40px;
+  max-width: none;
+  margin: 0;
+  padding: 28px 28px 40px;
+  gap: var(--space-6);
+  overflow: visible;
 }
-
-/* KPI strip: 5-col on analytics, keep as-is */
-/* Charts row: stack vertically inside the narrower panel */
 .scout-layout__main .dash__charts-row {
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 280px;
 }
 .scout-layout__main .dash__chart-card--narrow {
-  max-width: 100%;
+  max-width: 280px;
 }
-
-/* Analytics row: 2-col instead of 3 */
 .scout-layout__main .dash__analytics-row {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
 }
-
-/* Snapshot tiles: 4-col (one row) */
 .scout-layout__main .dash__snapshot-grid {
   grid-template-columns: repeat(4, 1fr);
 }
-
-/* Pulse grid: 1-col stack */
 .scout-layout__main .dash__pulse-grid {
   grid-template-columns: 1fr;
 }
@@ -1392,9 +1385,9 @@ a { color: var(--text-link); text-decoration: none; }
 }
 .dash__welcome-title {
   margin: 0;
-  font-size: 36px;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  font-size: var(--type-h4-size);
+  line-height: var(--type-h4-line);
+  letter-spacing: var(--type-h4-track);
   font-weight: var(--weight-semibold);
   color: var(--text-primary);
 }
@@ -1433,11 +1426,11 @@ a { color: var(--text-link); text-decoration: none; }
 /* ───── Shared 60/40 Scout layout (home + analytics) ─────────────────── */
 .scout-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 384px;
+  grid-template-columns: 60% 40%;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  padding-right: 12px;
+  padding-right: 0;
   gap: 0;
 }
 .scout-layout__main {
@@ -1448,16 +1441,17 @@ a { color: var(--text-link); text-decoration: none; }
 }
 .scout-layout__main::-webkit-scrollbar { display: none; }
 
-/* ───── Scout panel — aurora gradient, floating with rounded corners ──── */
+/* ───── Scout panel — full-height, flush, aurora gradient ──────────────── */
 .scout-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  margin: 12px 0 12px;
-  border-radius: 16px;
-  border: 1px solid rgba(0,0,0,0.07);
-  box-shadow: 0 4px 24px rgba(91,91,245,0.08), 0 1px 4px rgba(0,0,0,0.05);
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: none;
   background: linear-gradient(
     -45deg,
     #ffffff,
@@ -1471,14 +1465,26 @@ a { color: var(--text-link); text-decoration: none; }
   background-size: 400% 400%;
   animation: kb-aurora 16s ease infinite;
 }
+/* ── Scout panel fixed header ── */
+.scout-panel__hdr {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.55);
+  backdrop-filter: blur(10px);
+}
+
 .scout-panel__inner {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 16px 16px 8px;
+  padding: 14px 16px 8px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   scroll-behavior: smooth;
   scrollbar-width: none;
 }
@@ -1486,6 +1492,125 @@ a { color: var(--text-link); text-decoration: none; }
 .scout-panel__composer {
   flex-shrink: 0;
   padding: 10px 16px 16px;
+}
+
+/* ── Dash topbar ── */
+.dash__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-base, #fff);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+}
+.dash__topbar-label {
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+.dash__topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dash__topbar-icon-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  cursor: pointer;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+.dash__topbar-icon-btn svg { width: 16px; height: 16px; }
+.dash__topbar-avatar-btn {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+/* ── Dash body (padded scrollable content) ── */
+.dash__body {
+  padding: 20px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.dash__greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Scout chat bubbles ── */
+.sp-chat-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: sp-fade-up 0.25s ease forwards;
+}
+.sp-chat-msg--scout { align-items: flex-start; }
+.sp-chat-msg--user  { align-items: flex-end; }
+@keyframes sp-fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sp-chat-bubble {
+  max-width: 88%;
+  padding: 9px 13px;
+  font-size: 13px;
+  line-height: 1.6;
+  border-radius: 16px;
+}
+.sp-chat-bubble--scout {
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(0,0,0,0.07);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+}
+.sp-chat-bubble--user {
+  background: var(--primary);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.sp-suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 2px 0 4px;
+  animation: sp-fade-up 0.25s ease forwards;
+}
+.sp-suggestion-chip {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(91,91,245,0.3);
+  background: rgba(255,255,255,0.7);
+  font-size: 12px;
+  color: var(--primary);
+  cursor: pointer;
+  font-weight: var(--weight-medium);
+  transition: background 0.15s;
+}
+.sp-suggestion-chip:hover { background: rgba(91,91,245,0.1); }
+.sp-suggestion-chip:disabled { opacity: 0.4; pointer-events: none; }
+.sp-typing-bubble {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
 }
 .scout-panel__pill {
   width: 100% !important;
