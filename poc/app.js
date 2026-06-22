@@ -83,6 +83,19 @@ const DEMO_BRAND = {
   secondaryAudience: 'Mothers and gift buyers · 35–50',
   peakActivity: 'Weekdays 2–4pm PKT',
   audienceDefault: 'Women 22–34 in Pakistan, the UAE, and the Pakistani diaspora, culturally curious, mobile-first, value heritage with a modern eye.',
+  // Person/brand-focused profile inferred from a website (About, Products,
+  // Story, Journal). Used by the website-sourced "About You" KB card.
+  webProfile: {
+    role: 'Heritage Fashion Label',
+    summary: 'Heritage fashion label reviving Sindhi & Kashmiri craft for a modern audience — working directly with artisans, sourcing ethically, and telling the story behind every piece.',
+    expertise:      ['Heritage Craft', 'Sustainable Fashion', 'Artisan Collaboration', 'Modern Tailoring'],
+    signatureTopics:['Heritage origin stories', 'Artisan spotlights', 'Sustainable sourcing', 'Styling guides'],
+    audienceList:   ['Women 22–34', 'Pakistani diaspora', 'Culturally curious shoppers', 'Gift buyers'],
+    services:       ['Sindhi-embroidered tops', 'Kashmiri shawls', 'Modern kurtas', 'Limited-run atelier pieces'],
+    credibility:    ['4,000+ community', 'Works directly with artisans', 'Ethical sourcing', 'Featured in heritage circles'],
+    workingStyle:   ['Craft-first', 'Ethical', 'Story-led', 'Detail-oriented'],
+    voice:          ['Warm', 'Culture-forward', 'Witty', 'Authentic'],
+  },
   toneDirections: [
     {
       id: 'warm-story',
@@ -178,6 +191,19 @@ const DEMO_INDIVIDUAL = {
   secondaryAudience: 'Founders / heads of product at early-stage startups',
   peakActivity: 'Weekday mornings PKT',
   audienceDefault: 'Designers and PMs 25–40, mid-level, building craft and reputation. Mostly North America and South Asia, mobile-first, save things for later.',
+  // Person-focused profile inferred from a personal website (About, Services,
+  // Case Studies, Testimonials, Blog). Used by the website-sourced "About You" card.
+  webProfile: {
+    role: 'Product Designer & Design Systems Specialist',
+    summary: 'Independent product designer focused on design systems and practical craft — helping designers and PMs ship adoption-ready systems and grow their careers.',
+    expertise:      ['Design Systems', 'Product Design', 'UX Strategy', 'Design Leadership'],
+    signatureTopics:['Design-system teardowns', 'Honest design critiques', 'Career growth for designers', 'Product thinking'],
+    audienceList:   ['Product Designers', 'Design Managers', 'Product Managers', 'Startup Founders'],
+    services:       ['Design Systems Consulting', 'Product Design', 'UX Audits', 'Mentorship'],
+    credibility:    ['10+ years experience', 'Built multiple design systems', 'Worked with startups and enterprise teams', 'Design mentor and speaker'],
+    workingStyle:   ['Systems-first', 'Practical', 'Outcome-focused', 'Detail-oriented'],
+    voice:          ['Direct', 'Honest', 'Educational', 'No jargon', 'Actionable'],
+  },
   toneDirections: [
     {
       id: 'direct-generous',
@@ -1265,6 +1291,76 @@ function xProfileHeader(profile) {
   append(card);
 }
 
+// Normalize a raw user-typed URL into a fully-qualified link (adds https://
+// when the scheme is missing). Returns '' for empty input.
+function normalizeUrl(raw) {
+  let u = (raw || '').trim();
+  if (!u) return '';
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  return u;
+}
+
+// Extract a clean display domain (no scheme, no www, no path) from any input.
+function urlDomain(raw) {
+  try {
+    return new URL(normalizeUrl(raw)).hostname.replace(/^www\./, '');
+  } catch (e) {
+    return (raw || '').trim().replace(/^https?:\/\//i, '').replace(/^www\./, '').split('/')[0];
+  }
+}
+
+// Website preview card — rendered when the user shares a site instead of (or
+// in addition to) connecting X. Uses the exact same visual language as the X
+// profile card so the two read as a matched pair. Defaults to a personal /
+// brand site preview built from the captured URL + brand context.
+function websitePreview(rawUrl) {
+  const isBrand   = state.accountType === 'brand';
+  const bannerSrc = isBrand ? '/BannerBrand.jpeg'  : '/BannerIndividual.jpeg';
+  const domain    = urlDomain(rawUrl);
+  const siteName  = state.brand.displayName || state.brand.name;
+  const firstName = (siteName || '').split(/\s+/)[0];
+  const navLinks  = ['Home', 'About', 'Work', 'Contact'];
+
+  const heroEyebrow = isBrand ? 'HERITAGE FASHION' : 'PORTFOLIO';
+  const heroTitle   = isBrand
+    ? `${siteName} — heritage, restitched.`
+    : `Hi, I'm ${firstName}.`;
+  const heroSub = isBrand
+    ? (state.brand.positioning || state.brand.bio || 'Hand-made craft for the next generation.')
+    : (state.brand.positioning || 'Product designer & writer. I design systems and write about craft, shipping, and the work behind it.');
+  const heroCta = isBrand ? 'Shop the collection' : 'View work';
+
+  const card = el('div', { class: 'x-header site-card' }, [
+    // Browser URL bar — centered.
+    el('div', { class: 'site-card__urlbar' }, [
+      el('span', { class: 'site-card__lock', html: icon('i-lock') }),
+      el('span', { class: 'site-card__url' }, domain),
+    ]),
+    // Website nav header.
+    el('div', { class: 'site-card__nav' }, [
+      el('span', { class: 'site-card__brand' }, siteName),
+      el('nav', { class: 'site-card__links' },
+        navLinks.map((n, i) => el('span', {
+          class: 'site-card__link' + (i === 0 ? ' site-card__link--active' : ''),
+        }, n))
+      ),
+    ]),
+    // Creative personal-branding hero.
+    el('div', {
+      class: 'site-card__hero',
+      style: `background-image: url('${bannerSrc}');`,
+    }, [
+      el('div', { class: 'site-card__hero-inner' }, [
+        el('span', { class: 'site-card__hero-eyebrow' }, heroEyebrow),
+        el('h2', { class: 'site-card__hero-title' }, heroTitle),
+        heroSub ? el('p', { class: 'site-card__hero-sub' }, heroSub) : null,
+        el('span', { class: 'site-card__hero-cta' }, heroCta),
+      ].filter(Boolean)),
+    ]),
+  ]);
+  append(card);
+}
+
 // Scout's analysis layered on top of the Twitter clone above.
 function xProfileStats(profile) {
   const topTopicEls = (profile.topTopics || []).map(t => el('div', { class: 'topic-bar topic-bar--lg' }, [
@@ -1602,6 +1698,13 @@ function renderKBBrandCard(card) {
     card.classList.add('kb-card--done');
   }
 
+  // Website-sourced profile: describe the PERSON, not content performance.
+  // No top-topic percentages, no peak-activity chart, no engagement metrics.
+  if (state.kb.aboutSource === 'website') {
+    renderKBWebProfileCard(card, brand, showActions, isBrandActive);
+    return;
+  }
+
   const sections = [
     { id: 'identity', revealed: reveal.has('identity'),
       build: () => buildKBIdentitySection(brand) },
@@ -1661,6 +1764,123 @@ function renderKBBrandCard(card) {
   } else if ((!showActions || !isBrandActive) && actionFooter) {
     actionFooter.remove();
   }
+}
+
+// Website-sourced "About You" — a concise person/brand summary. Uses short
+// text copy (not tags), with two compact infographic lines (audience avatars +
+// credibility stat tiles). All fields fill immediately — no shimmer skeletons.
+const KB_WEB_IDS = new Set([
+  'web-identity', 'web-summary', 'web-expertise', 'web-signature',
+  'web-audience', 'web-services', 'web-credibility', 'web-style', 'web-voice',
+]);
+
+function renderKBWebProfileCard(card, brand, showActions, isBrandActive) {
+  const wp = brand.webProfile || {};
+  const dot = ' · ';
+
+  // Clear any stale X-style sections left over from an earlier (hidden) render.
+  card.querySelectorAll('[data-kbs]').forEach(s => {
+    if (!KB_WEB_IDS.has(s.dataset.kbs)) s.remove();
+  });
+
+  const sections = [
+    { id: 'web-identity',   build: () => buildKBWebIdentitySection(brand) },
+    { id: 'web-summary',    build: () => buildKBWebSummary(wp.summary || brand.positioning) },
+    { id: 'web-expertise',  build: () => buildKBWebTextSection('EXPERTISE', (wp.expertise || []).join(dot)) },
+    { id: 'web-signature',  build: () => buildKBWebTextSection('SIGNATURE TOPICS', (wp.signatureTopics || []).join(dot)) },
+    { id: 'web-audience',   build: () => buildKBWebAudienceSection(wp.audienceList || []) },
+    { id: 'web-services',   build: () => buildKBWebTextSection('SERVICES', (wp.services || []).join(dot)) },
+    { id: 'web-credibility',build: () => buildKBWebStatsSection(wp.credibility || []) },
+    { id: 'web-style',      build: () => buildKBWebTextSection('WORKING STYLE', (wp.workingStyle || []).join(', ')) },
+    { id: 'web-voice',      build: () => buildKBWebTextSection('VOICE & COMMUNICATION', (wp.voice || []).join(', ')) },
+  ];
+
+  sections.forEach(({ id, build }, i) => {
+    if (card.querySelector(`[data-kbs="${id}"]`)) return;
+    const footer = card.querySelector('.kb-card__actions');
+    const section = build();
+    section.dataset.kbs = id;
+    if (footer) card.insertBefore(section, footer);
+    else card.appendChild(section);
+    const delay = 60 + i * 80;
+    requestAnimationFrame(() => setTimeout(() => section.classList.add('kbs--visible'), delay));
+  });
+
+  // Action footer — Looks right / Not quite — only while active + awaiting confirm.
+  let actionFooter = card.querySelector('.kb-card__actions');
+  if (showActions && isBrandActive && !actionFooter) {
+    actionFooter = el('div', { class: 'kb-card__actions' }, [
+      el('button', { class: 'kb-card__btn kb-card__btn--ghost',
+        onclick: () => state.kb.actionCallback && state.kb.actionCallback('edit') }, 'Not quite'),
+      el('button', { class: 'kb-card__btn kb-card__btn--primary',
+        onclick: () => state.kb.actionCallback && state.kb.actionCallback('confirm') }, 'Looks right'),
+    ]);
+    card.appendChild(actionFooter);
+    requestAnimationFrame(() => setTimeout(() => actionFooter.classList.add('kbs--visible'), 20));
+  } else if ((!showActions || !isBrandActive) && actionFooter) {
+    actionFooter.remove();
+  }
+}
+
+// Identity block for the website card: name, role, location, positioning.
+function buildKBWebIdentitySection(brand) {
+  const name = state.user.name || brand.name;
+  const wp = brand.webProfile || {};
+  return el('div', { class: 'kbs kbs--identity' }, [
+    el('div', { class: 'kbs__identity-top' }, [
+      el('div', { class: 'kbs__identity-name' }, name),
+      brand.location ? el('div', { class: 'kbs__identity-loc' }, brand.location) : null,
+    ].filter(Boolean)),
+    el('div', { class: 'kbs__identity-niche' }, wp.role || brand.niche),
+    el('div', { class: 'kbs__identity-pos' }, brand.positioning),
+  ]);
+}
+
+// One-line plain-English summary of who the person is.
+function buildKBWebSummary(text) {
+  return el('div', { class: 'kbs kbs--summary' }, [
+    el('p', { class: 'kbs__summary' }, text || ''),
+  ]);
+}
+
+// Eyebrow + short comma/dot-separated text value (not chips).
+function buildKBWebTextSection(eyebrow, text) {
+  return el('div', { class: 'kbs kbs--textline' }, [
+    el('div', { class: 'kbs__eyebrow' }, eyebrow),
+    el('div', { class: 'kbs__value' }, text),
+  ]);
+}
+
+// Audience — avatar cluster (infographic) + short who-they-help line.
+function buildKBWebAudienceSection(items) {
+  const photos = [
+    'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=60&h=60&fit=crop',
+    'https://images.pexels.com/photos/1222271/pexels-photo-1222271.jpeg?auto=compress&cs=tinysrgb&w=60&h=60&fit=crop',
+    'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=60&h=60&fit=crop',
+  ];
+  const avatars = photos.map((src, i) =>
+    el('div', { class: 'kbs__avatar', style: `z-index:${3 - i}` }, [
+      el('img', { class: 'kbs__avatar-img', src, alt: '', loading: 'lazy' }),
+    ])
+  );
+  return el('div', { class: 'kbs kbs--audience' }, [
+    el('div', { class: 'kbs__eyebrow' }, 'AUDIENCE'),
+    el('div', { class: 'kbs__audience-row' }, [
+      el('div', { class: 'kbs__avatars' }, avatars),
+      el('div', { class: 'kbs__audience-text' }, [
+        el('div', { class: 'kbs__audience-primary' }, (items || []).join(', ')),
+      ]),
+    ]),
+  ]);
+}
+
+// Credibility — compact stat tiles (infographic), value-carrying proof points.
+function buildKBWebStatsSection(items) {
+  const tiles = (items || []).slice(0, 4).map(t => el('div', { class: 'kbs__stat' }, t));
+  return el('div', { class: 'kbs kbs--stats' }, [
+    el('div', { class: 'kbs__eyebrow' }, 'CREDIBILITY'),
+    el('div', { class: 'kbs__stats' }, tiles),
+  ]);
 }
 
 function buildKBShimmerSection(id) {
@@ -4045,6 +4265,7 @@ async function step_topics_individual() {
 // context when X was skipped. No auto-submission; the user decides what to share.
 async function stepMaterials() {
   const xConnected = !state.skipped.has('x-connect');
+  let providedUrl = '';
 
   // Returns a promise that resolves with either the typed text or 'skip'
   // whichever happens first — composer input or the skip quick-reply button.
@@ -4093,6 +4314,7 @@ async function stepMaterials() {
     if (reply === 'skip') {
       return;
     }
+    providedUrl = reply;
   } else {
     // X was skipped — we have almost nothing. Make the ask clear but not pressuring.
     await scoutMsg(
@@ -4111,19 +4333,29 @@ async function stepMaterials() {
       );
       return;
     }
+    providedUrl = reply;
   }
 
-  // User provided something — simulate a website scan with the demo URL.
-  userMsg(state.brand.websiteUrl);
+  // Capture the EXACT link the user typed (not a demo default) and echo it back
+  // as their message. Use a normalized form for the scan + preview.
+  const typedUrl = (providedUrl || '').trim();
+  state.brand.websiteUrl = typedUrl;
+  userMsg(typedUrl);
+  const cleanUrl = normalizeUrl(typedUrl);
+
+  // Data is coming from a website — the About You card should describe the
+  // person/brand (identity, expertise, services, credibility, voice), not X
+  // content performance.
+  state.kb.aboutSource = 'website';
 
   const lines = state.accountType === 'brand' ? [
-    { icon: 'i-globe',   text: `Loading ${state.brand.websiteUrl}` },
+    { icon: 'i-globe',   text: `Loading ${cleanUrl}` },
     { icon: 'i-grid',    text: 'Three product categories live on the site. Sindhi embroidery, Kashmiri shawls, contemporary kurtas.' },
     { icon: 'i-quote',   text: 'Your About page tells a strong founder story. That is reusable content material.' },
     { icon: 'i-sparkle', text: 'Brand messaging emphasizes craftsmanship and ethical sourcing. Both differentiators in this niche.' },
     { icon: 'i-palette', text: 'Pulling color palette and tone of voice from the copy.' },
   ] : [
-    { icon: 'i-globe',   text: `Loading ${state.brand.websiteUrl}` },
+    { icon: 'i-globe',   text: `Loading ${cleanUrl}` },
     { icon: 'i-quote',   text: 'Short bio plus an essays index. Most essays are about design systems and product craft.' },
     { icon: 'i-sparkle', text: 'Voice in the writing reads as direct, specific, non-academic.' },
     { icon: 'i-link',    text: "I see an 'office hours' page. That's a strong CTA you could surface more." },
@@ -4132,22 +4364,21 @@ async function stepMaterials() {
 
   await narratedProcess('Scanning your site', lines);
 
-  // Reveal KB sections not already unlocked by X scan
-  if (!state.kb.kbReveal.has('identity'))  { state.kb.kbReveal.add('identity');  renderKB(); await sleep(500); }
-  if (!state.kb.kbReveal.has('themes'))    { state.kb.kbReveal.add('themes');    renderKB(); await sleep(400); }
-  if (!state.kb.kbReveal.has('topics'))    { state.kb.kbReveal.add('topics');    renderKB(); await sleep(400); }
-  if (!state.kb.kbReveal.has('audience'))  { state.kb.kbReveal.add('audience');  renderKB(); await sleep(300); }
-  if (!state.kb.kbReveal.has('peak'))      { state.kb.kbReveal.add('peak');      renderKB(); }
+  // Website preview card — renders like a real site.
+  websitePreview(typedUrl);
+  await sleep(600);
 
-  await scoutMsg("Anything else, or are we good?", { typingFor: 700, beat: 400 });
-  await quickReplies(["That's everything", 'Add more later'], { primaryIndex: 0 });
+  // Bring the KB panel in alongside the website preview so the user watches
+  // Scout's gathered data appear. In the X-connected path it's already open;
+  // this is the moment it appears when X was skipped and a site was shared.
+  if (!document.body.classList.contains('mode-kb-open')) openKBPanel();
+  else renderKB();
+  await sleep(300);
 
-  addKBFact('brand', 'Brand',       state.brand.name);
-  addKBFact('brand', 'Positioning', state.brand.positioning);
-  addKBFact('brand', 'Themes',      state.brand.themes.join(', '));
-  if (state.accountType === 'brand') {
-    addKBFact('brand', 'Products',  state.brand.products.join(', '));
-  }
+  // Render the website-sourced About You card. Its 8 sections animate in
+  // one-by-one via the staggered entry built into renderKBWebProfileCard.
+  renderKB();
+  await sleep(1400);
 }
 
 async function step7_intel_scan() {
@@ -4846,6 +5077,7 @@ function saveCheckpoint(step) {
         kb: {
           activeId: state.kb?.activeId,
           kbReveal: state.kb?.kbReveal ? [...state.kb.kbReveal] : [],
+          aboutSource: state.kb?.aboutSource || null,
         },
       },
     }));
@@ -5699,6 +5931,7 @@ function boot() {
       if (cs.kb) {
         state.kb.activeId = cs.kb.activeId || 'brand';
         state.kb.kbReveal = new Set(cs.kb.kbReveal || []);
+        state.kb.aboutSource = cs.kb.aboutSource || null;
       }
 
       // Inject saved stream HTML

@@ -5079,6 +5079,67 @@ body.mode-connecting #kb-panel { display: none; }
   margin-bottom: -1px;
 }
 
+/* Website preview card — renders like a real site: centered browser URL bar,
+   a nav header, then a creative personal-branding hero. */
+.site-card__urlbar {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 10px 14px;
+  background: #f7f9f9;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+  color: #536471;
+}
+.site-card__lock { display: inline-flex; color: #536471; }
+.site-card__lock svg { width: 13px; height: 13px; }
+.site-card__url { font-weight: 600; color: #0f1419; }
+
+/* Site nav header */
+.site-card__nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.site-card__brand {
+  font-size: 16px; font-weight: 800;
+  color: #0f1419; letter-spacing: -0.01em;
+}
+.site-card__links { display: flex; gap: 18px; }
+.site-card__link { font-size: 14px; font-weight: 500; color: #536471; }
+.site-card__link--active { color: #0f1419; font-weight: 700; }
+
+/* Hero */
+.site-card__hero {
+  position: relative;
+  background-size: cover; background-position: center;
+  padding: 56px 28px;
+  color: #fff;
+}
+.site-card__hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.62) 100%);
+}
+.site-card__hero-inner { position: relative; max-width: 460px; }
+.site-card__hero-eyebrow {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 1.5px; opacity: 0.85;
+}
+.site-card__hero-title {
+  margin: 10px 0 0;
+  font-size: 28px; line-height: 1.15;
+  font-weight: 800; letter-spacing: -0.02em;
+}
+.site-card__hero-sub {
+  margin: 12px 0 0;
+  font-size: 15px; line-height: 1.5;
+  opacity: 0.92;
+}
+.site-card__hero-cta {
+  display: inline-block; margin-top: 18px;
+  background: #fff; color: #0f1419;
+  font-weight: 700; font-size: 14px;
+  padding: 9px 18px; border-radius: 999px;
+}
+
 /* =========================================================================
    X profile — Stats (Scout's analysis)
    ========================================================================= */
@@ -8041,18 +8102,19 @@ body.mode-kb-open #kb-panel {
   min-width: 40% !important;
   max-width: none !important;
   width: 40% !important;
-  height: 100% !important;
+  height: calc(100% + 1px) !important;
+  margin-bottom: -1px !important;
   align-self: stretch !important;
   opacity: 1;
   overflow: hidden !important;
   background: linear-gradient(
     -45deg,
     #ffffff,
-    #D8D5FF,
+    #C7D0FF,
     #ffffff,
-    #E8EEFF,
+    #CFE0FF,
     #ffffff,
-    #DDD9FF,
+    #C9D2FF,
     #ffffff
   );
   background-size: 400% 400%;
@@ -8354,6 +8416,36 @@ body.mode-kb-open.mode-kb-visible #kb-panel {
   font-size: 12.5px;
   color: #888;
   line-height: 1.5;
+}
+
+/* ── Website-sourced About You: summary, text lines, stat tiles ── */
+.kbs--summary { padding-top: 12px; }
+.kbs__summary {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #444;
+}
+.kbs--textline { padding-top: 14px; }
+.kbs__value {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #333;
+}
+.kbs--stats { padding-top: 14px; }
+.kbs__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.kbs__stat {
+  font-size: 11px;
+  line-height: 1.3;
+  color: #3f3f46;
+  background: #f7f7f9;
+  border: 1px solid #ededf1;
+  border-radius: 8px;
+  padding: 5px 9px;
 }
 
 /* ── Themes chips ── */
