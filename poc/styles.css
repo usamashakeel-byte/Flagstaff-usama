@@ -1945,8 +1945,170 @@ a { color: var(--text-link); text-decoration: none; }
 .pulse--suggest:hover .pulse__suggest-arrow { transform: translateX(3px); }
 
 /* ───── Recent activity ───────────────────────────────────────────────── */
+/* In-panel header — sticky to the top of the left panel (home + analytics) */
+.panel-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  background: var(--surface-canvas);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
 .dash__recent { display: flex; flex-direction: column; gap: var(--space-3); }
 .dash__recent-head { display: flex; align-items: center; justify-content: space-between; }
+
+/* ── Recent posts: coverflow carousel → expands into a 2-col grid ── */
+.dash__recent-carousel {
+  --post-w: 370px;             /* focused card width (≈ half the section, like the reference) */
+  --peek: 120px;               /* how much of each neighbour shows beyond the centre */
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* side padding lets the focused card sit centred with neighbours peeking;
+     vertical padding gives the focused card's shadow room (scroll clips at edges) */
+  padding: 32px calc(50% - var(--post-w) / 2);
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+.dash__recent-carousel::-webkit-scrollbar { display: none; }
+.dash__recent-carousel .success-post {
+  flex: 0 0 var(--post-w);
+  width: var(--post-w);
+  max-width: var(--post-w);
+  scroll-snap-align: center;
+  transition: transform 0.4s var(--ease-standard), opacity 0.4s var(--ease-standard), filter 0.4s var(--ease-standard);
+}
+/* Coverflow: only the centre card + its two neighbours show; the centre card
+   overlaps the neighbours, which sit behind it blurred and de-emphasized. */
+.dash__recent-carousel:not(.is-expanded) .success-post {
+  /* negative margin pulls neighbours under the centre so only --peek shows */
+  margin: 0 calc((var(--peek) - var(--post-w)) / 2);
+  transform: scale(0.9);
+  opacity: 0;                  /* far cards hidden — only active + neighbours fade in */
+  filter: blur(5px);
+  z-index: 0;
+  pointer-events: none;
+  border-radius: var(--radius-card);
+}
+.dash__recent-carousel:not(.is-expanded) .success-post.is-near {
+  opacity: 0.6;
+  z-index: 1;
+}
+.dash__recent-carousel:not(.is-expanded) .success-post.is-active {
+  transform: scale(1);
+  opacity: 1;
+  filter: none;
+  z-index: 3;
+  pointer-events: auto;
+  box-shadow: 0 10px 30px rgba(17, 17, 26, 0.15), 0 2px 8px rgba(17, 17, 26, 0.06);
+}
+/* Hide the per-post button in the resting carousel to match the reference */
+.dash__recent-carousel:not(.is-expanded) .success-post__analytics { display: none; }
+/* Expanded: 2 columns, 2 posts per row, cards keep their original width */
+.dash__recent-carousel.is-expanded {
+  display: grid;
+  grid-template-columns: repeat(2, var(--post-w));
+  justify-content: center;
+  gap: var(--space-4);
+  overflow: visible;
+  padding: 4px 0 0;
+  scroll-snap-type: none;
+}
+.dash__recent-carousel.is-expanded .success-post {
+  flex: none;
+  width: 100%;
+  margin: 0;
+  transform: none;
+  opacity: 1;
+  filter: none;
+  z-index: auto;
+}
+
+/* "View posts" expand toggle under the carousel */
+.dash__recent-toggle {
+  align-self: center;
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--primary);
+}
+.dash__recent-toggle-arrow { display: inline-flex; transition: transform var(--duration-base) var(--ease-standard); }
+.dash__recent-toggle-arrow svg { width: 16px; height: 16px; }
+.dash__recent-toggle.is-open .dash__recent-toggle-arrow { transform: rotate(180deg); }
+
+/* Per-post "View analytics" button */
+.success-post__analytics {
+  appearance: none;
+  cursor: pointer;
+  margin-top: var(--space-3);
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 14px;
+  border-radius: var(--radius-control);
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  transition: background 0.15s, transform 0.1s;
+}
+.success-post__analytics:hover { background: var(--primary-pressed); }
+.success-post__analytics:active { transform: scale(0.98); }
+.success-post__analytics svg { width: 14px; height: 14px; }
+
+/* ── Analytics page: single-post context banner ── */
+.dash__post-context {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+}
+.dash__post-context-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--surface-sunken) center/cover no-repeat;
+  flex-shrink: 0;
+}
+.dash__post-context-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dash__post-context-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: var(--weight-semibold);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--primary);
+}
+.dash__post-context-icon { display: inline-flex; }
+.dash__post-context-icon svg { width: 13px; height: 13px; }
+.dash__post-context-body {
+  font-size: var(--text-sm); color: var(--text-primary);
+  line-height: 1.45;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dash__post-context-meta { font-size: 12px; color: var(--text-tertiary); }
+.dash__post-context-clear {
+  appearance: none; background: none; border: none; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--primary);
+  flex-shrink: 0;
+}
+.dash__post-context-clear svg { width: 14px; height: 14px; }
 .dash__recent-title { margin: 0; font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--text-primary); }
 .dash__recent-link {
   appearance: none; background: none; border: none; cursor: pointer;
@@ -2895,6 +3057,10 @@ body.mode-conv .demo-ctl {
 body.mode-onboarding .sidebar,
 body.mode-onboarding .topbar { display: none; }
 body.mode-onboarding .app    { grid-template-columns: 1fr; }
+
+/* Home + analytics own their header inside the left panel — hide global topbar */
+body.mode-home .topbar,
+body.mode-dash .topbar { display: none; }
 
 /* Hide the bell/profile-chip in onboarding (already covered by topbar hide,
    but kept defensively in case topbar reappears for any reason). */

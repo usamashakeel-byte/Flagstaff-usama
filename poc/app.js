@@ -312,6 +312,8 @@ function showView(id) {
   $$('.view').forEach(v => v.classList.remove('view--active'));
   $('#' + id).classList.add('view--active');
   document.body.classList.toggle('mode-conv', id === 'view-conv' || id === 'view-dash');
+  document.body.classList.toggle('mode-home', id === 'view-home');
+  document.body.classList.toggle('mode-dash', id === 'view-dash');
   // Sync sidebar active state
   $$('.sidebar__btn[data-nav]').forEach(b => b.removeAttribute('aria-current'));
   const navMap = { 'view-home': 'home', 'view-dash': 'analytics', 'view-conv': 'posts' };
@@ -1777,6 +1779,21 @@ function renderHome() {
   const isBrand = state.accountType === 'brand';
   const firstName = (state.user.name || 'there').split(/\s+/)[0];
 
+  // ───── In-panel header (lives inside the left panel, not the global shell) ──
+  home.appendChild(el('div', { class: 'panel-topbar' }, [
+    el('div', { class: 'crumbs' }, [
+      el('span', { class: 'crumbs__current' }, 'Home'),
+    ]),
+    el('div', { class: 'topbar__right' }, [
+      el('button', { class: 'bell', type: 'button', 'aria-label': 'Notifications', html: icon('i-bell') }),
+      el('button', { class: 'profile-chip', type: 'button' }, [
+        el('span', { class: 'profile-chip__avatar' }),
+        el('span', { class: 'profile-chip__name' }, firstName),
+        el('span', { html: icon('i-chevron-down') }),
+      ]),
+    ]),
+  ]));
+
   const wrap = el('div', { class: 'dash' });
 
   // ───── Welcome strip ──────────────────────────────────────────────────
@@ -2180,11 +2197,12 @@ function appendScoutChatReply(inner, label, replyMap) {
   }, 1000);
 }
 
-function goAnalytics() {
+function goAnalytics(post) {
+  state.viewingPost = post || null;
   renderDashboard();
   initDashScout();
   showView('view-dash');
-  setCrumbs(['Dashboard']);
+  setCrumbs(post ? ['Dashboard', 'Post analytics'] : ['Dashboard']);
 }
 
 function buildSnapshot(isBrand) {
@@ -2205,10 +2223,6 @@ function buildSnapshot(isBrand) {
       el('span', { class: 'dash__snapshot-label' }, [
         el('span', { class: 'dash__snapshot-mark', html: icon('i-x-logo') }),
         document.createTextNode('Your account · last 7 days'),
-      ]),
-      el('button', { class: 'dash__snapshot-link', type: 'button', onclick: goAnalytics }, [
-        document.createTextNode('View analytics'),
-        el('span', { class: 'dash__snapshot-arrow', html: icon('i-arrow-right') }),
       ]),
     ]),
     el('div', { class: 'dash__snapshot-grid' },
@@ -2248,32 +2262,49 @@ function buildRecentActivity(isBrand) {
   const verified = brand.verified != null ? brand.verified : preset.verified;
   const avatar   = preset.avatar;
 
-  const post = state.publishedPost || {
-    body: isBrand
-      ? "Heritage isn't an aesthetic. It's a postcode and a person who can name the stitch."
-      : "Most design-system posts skip the part that matters: adoption. Token tables are easy.",
-    postedAt: Date.now() - 1000 * 60 * 60 * 26,
-  };
+  // Six published posts, newest first. A freshly published post (if any) is
+  // prepended and the list is capped at 6 so the deck/grid always shows 6.
+  const samplePosts = (isBrand ? [
+    { body: "Heritage isn't an aesthetic. It's a postcode and a person who can name the stitch.", rel: '2h ago',
+      metrics: [['i-reply', '41'], ['i-repost', '74'], ['i-heart', '312'], ['i-bar-chart', '5,210']] },
+    { body: "Bibi taught us mirror work in Hyderabad. 31 years, and her hands still move faster than my notes.", rel: '1d ago',
+      metrics: [['i-reply', '28'], ['i-repost', '53'], ['i-heart', '241'], ['i-bar-chart', '3,980']] },
+    { body: "Workshop reels outperform studio reels 1.8× for us. Tells you exactly what your audience wants.", rel: '3d ago',
+      metrics: [['i-reply', '19'], ['i-repost', '34'], ['i-heart', '187'], ['i-bar-chart', '2,640']] },
+    { body: "We almost cut the behind-the-scenes clips. They're now our highest-saving format by a mile.", rel: '5d ago',
+      metrics: [['i-reply', '24'], ['i-repost', '47'], ['i-heart', '226'], ['i-bar-chart', '3,310']] },
+    { body: "A customer named the exact village her grandmother's pattern came from. That's the whole brand.", rel: '1w ago',
+      metrics: [['i-reply', '31'], ['i-repost', '58'], ['i-heart', '298'], ['i-bar-chart', '4,180']] },
+    { body: "Sold out the Heritage Capsule in 9 hours. The waitlist post did more than any paid ad we ran.", rel: '2w ago',
+      metrics: [['i-reply', '37'], ['i-repost', '69'], ['i-heart', '341'], ['i-bar-chart', '6,020']] },
+  ] : [
+    { body: "Most design-system posts skip the part that matters: adoption. Token tables are easy.", rel: '2h ago',
+      metrics: [['i-reply', '28'], ['i-repost', '42'], ['i-heart', '186'], ['i-bar-chart', '3,420']] },
+    { body: "First time I shipped a system, I optimized the wrong thing for six months. The buttons were perfect. Nobody used them.", rel: '1d ago',
+      metrics: [['i-reply', '34'], ['i-repost', '61'], ['i-heart', '274'], ['i-bar-chart', '4,510']] },
+    { body: "'AI replaces designers' is a take from people who don't ship. The real question is which 30% goes first.", rel: '4d ago',
+      metrics: [['i-reply', '22'], ['i-repost', '38'], ['i-heart', '203'], ['i-bar-chart', '3,120']] },
+    { body: "The best brief I ever got was three sentences and one constraint. Everything after that wrote itself.", rel: '6d ago',
+      metrics: [['i-reply', '18'], ['i-repost', '29'], ['i-heart', '164'], ['i-bar-chart', '2,470']] },
+    { body: "Stop reviewing in Figma comments. Get in a room for ten minutes. You'll save the whole afternoon.", rel: '1w ago',
+      metrics: [['i-reply', '26'], ['i-repost', '44'], ['i-heart', '219'], ['i-bar-chart', '3,640']] },
+    { body: "Shipped the design-tokens talk to 400 people. The 'adoption, not aesthetics' line got the loudest nod.", rel: '2w ago',
+      metrics: [['i-reply', '33'], ['i-repost', '57'], ['i-heart', '287'], ['i-bar-chart', '5,090']] },
+  ]).slice();
 
-  const ms = Date.now() - (post.postedAt || Date.now());
-  const mins = Math.round(ms / 60000);
-  const rel = mins < 1 ? 'Just now'
-    : mins < 60 ? `${mins}m ago`
-    : mins < 1440 ? `${Math.round(mins / 60)}h ago`
-    : `${Math.round(mins / 1440)}d ago`;
-
-  const metrics = isBrand
-    ? [['i-reply', '41'], ['i-repost', '74'], ['i-heart', '312'], ['i-bar-chart', '5,210']]
-    : [['i-reply', '28'], ['i-repost', '42'], ['i-heart', '186'], ['i-bar-chart', '3,420']];
+  if (state.publishedPost && state.publishedPost.body) {
+    samplePosts.unshift({
+      body: state.publishedPost.body,
+      rel: 'Just now',
+      metrics: [['i-reply', '12'], ['i-repost', '18'], ['i-heart', '64'], ['i-bar-chart', '1,400']],
+    });
+  }
+  const posts = samplePosts.slice(0, 6);
 
   const goPosts = () => { showView('view-conv'); setCrumbs(['Posts']); };
 
-  const tweet = el('div', {
+  const makePost = (p) => el('div', {
     class: 'success-post success-post--recent',
-    role: 'button',
-    tabindex: '0',
-    onclick: goPosts,
-    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goPosts(); } },
   }, [
     el('div', { class: 'success-post__head' }, [
       el('div', { class: 'success-post__avatar', style: `background-image: url('${avatar}');` }),
@@ -2281,7 +2312,7 @@ function buildRecentActivity(isBrand) {
         el('div', { class: 'success-post__name-row' }, [
           el('span', { class: 'success-post__name' }, name),
           verified ? el('span', { class: 'success-post__verified', html: icon('i-check') }) : null,
-          el('span', { class: 'success-post__handle' }, `${handle} · ${rel}`),
+          el('span', { class: 'success-post__handle' }, `${handle} · ${p.rel}`),
         ]),
       ]),
       el('span', { class: 'success-post__badge success-post__badge--live' }, [
@@ -2289,24 +2320,75 @@ function buildRecentActivity(isBrand) {
         document.createTextNode('Published'),
       ]),
     ]),
-    el('div', { class: 'success-post__body' }, post.body),
+    el('div', { class: 'success-post__body' }, p.body),
     el('div', { class: 'success-post__metrics' },
-      metrics.map(([ic, value]) => el('div', { class: 'success-post__metric' }, [
+      p.metrics.map(([ic, value]) => el('div', { class: 'success-post__metric' }, [
         el('span', { class: 'success-post__metric-icon', html: icon(ic) }),
         el('span', { class: 'success-post__metric-value' }, value),
       ])),
     ),
+    el('button', { class: 'success-post__analytics', type: 'button',
+      onclick: (e) => { e.stopPropagation(); goAnalytics({ ...p, name, handle, avatar, verified }); } }, [
+      el('span', { html: icon('i-bar-chart') }),
+      document.createTextNode('View analytics'),
+    ]),
   ]);
+
+  // Horizontal carousel: posts scroll left/right with the centred card focused;
+  // the centre card is tracked on scroll and marked .is-active.
+  const carousel = el('div', { class: 'dash__recent-carousel' }, posts.map(makePost));
+
+  function updateActive() {
+    if (carousel.classList.contains('is-expanded')) return;
+    const cards = Array.from(carousel.querySelectorAll('.success-post'));
+    const box = carousel.getBoundingClientRect();
+    const mid = box.left + box.width / 2;
+    let bestIdx = 0, bestDist = Infinity;
+    cards.forEach((card, i) => {
+      const r = card.getBoundingClientRect();
+      const d = Math.abs((r.left + r.width / 2) - mid);
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    });
+    cards.forEach((c, i) => {
+      c.classList.toggle('is-active', i === bestIdx);
+      c.classList.toggle('is-near', Math.abs(i - bestIdx) === 1);
+    });
+  }
+  carousel.addEventListener('scroll', () => requestAnimationFrame(updateActive));
+  requestAnimationFrame(updateActive);
+
+  // "View posts" toggle: smoothly expands the carousel into a 2-column grid.
+  const toggle = el('button', { class: 'dash__recent-toggle', type: 'button' }, [
+    el('span', { class: 'dash__recent-toggle-label' }, 'View posts'),
+    el('span', { class: 'dash__recent-toggle-arrow', html: icon('i-chevron-down') }),
+  ]);
+  toggle.addEventListener('click', () => {
+    const expanded = carousel.classList.toggle('is-expanded');
+    toggle.classList.toggle('is-open', expanded);
+    toggle.querySelector('.dash__recent-toggle-label').textContent = expanded ? 'Hide posts' : 'View posts';
+    if (expanded) {
+      const cards = Array.from(carousel.querySelectorAll('.success-post'));
+      cards.forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(10px)';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          card.style.transition = `transform 0.4s var(--ease-standard) ${i * 0.05}s, opacity 0.4s ease ${i * 0.05}s`;
+          card.style.opacity = '';
+          card.style.transform = '';
+        }));
+      });
+    } else {
+      carousel.querySelectorAll('.success-post').forEach(c => { c.style.transition = ''; });
+      requestAnimationFrame(updateActive);
+    }
+  });
 
   return el('div', { class: 'dash__recent' }, [
     el('div', { class: 'dash__recent-head' }, [
       el('h3', { class: 'dash__recent-title' }, 'Recent activity'),
-      el('button', { class: 'dash__recent-link', type: 'button', onclick: goPosts }, [
-        document.createTextNode('All posts'),
-        el('span', { class: 'dash__recent-arrow', html: icon('i-arrow-right') }),
-      ]),
     ]),
-    tweet,
+    carousel,
+    toggle,
   ]);
 }
 
@@ -2418,14 +2500,33 @@ function buildPulseWindow(isBrand) {
 
 function renderDashboard() {
   const dash = $('#dash');
+  const main = dash.parentElement;            // .scout-layout__main (scroll container)
+  main.querySelectorAll('.panel-topbar').forEach(n => n.remove());
   dash.innerHTML = '';
 
   const isBrand = state.accountType === 'brand';
   const firstName = (state.user.name || 'there').split(/\s+/)[0];
 
+  // ───── In-panel header (lives inside the left panel, not the global shell) ──
+  main.insertBefore(el('div', { class: 'panel-topbar' }, [
+    el('div', { class: 'crumbs' }, [
+      el('span', { class: 'crumbs__current' }, 'Dashboard'),
+    ]),
+    el('div', { class: 'topbar__right' }, [
+      el('button', { class: 'bell', type: 'button', 'aria-label': 'Notifications', html: icon('i-bell') }),
+      el('button', { class: 'profile-chip', type: 'button' }, [
+        el('span', { class: 'profile-chip__avatar' }),
+        el('span', { class: 'profile-chip__name' }, firstName),
+        el('span', { html: icon('i-chevron-down') }),
+      ]),
+    ]),
+  ]), dash);
+
+  const viewingPost = state.viewingPost;
+
   // Greeting
   dash.appendChild(el('div', { class: 'dash__greeting' }, [
-    el('h1', { class: 'dash__title' }, `Good to have you, ${firstName}.`),
+    el('h1', { class: 'dash__title' }, viewingPost ? 'Post analytics' : `Good to have you, ${firstName}.`),
     el('div', { class: 'dash__header-meta' }, [
       el('div', { class: 'dash__date-range' }, [
         el('span', { html: icon('i-cal') }),
@@ -2435,6 +2536,26 @@ function renderDashboard() {
       el('span', { class: 'dash__updated' }, 'Updated just now'),
     ]),
   ]));
+
+  // Single-post context banner — shows which post's analytics are in view
+  if (viewingPost) {
+    const snippet = (viewingPost.body || '').slice(0, 90) + ((viewingPost.body || '').length > 90 ? '…' : '');
+    dash.appendChild(el('div', { class: 'dash__post-context' }, [
+      el('div', { class: 'dash__post-context-avatar', style: viewingPost.avatar ? `background-image: url('${viewingPost.avatar}')` : '' }),
+      el('div', { class: 'dash__post-context-text' }, [
+        el('div', { class: 'dash__post-context-label' }, [
+          el('span', { class: 'dash__post-context-icon', html: icon('i-bar-chart') }),
+          document.createTextNode('Viewing analytics for this post'),
+        ]),
+        el('div', { class: 'dash__post-context-body' }, snippet),
+        el('div', { class: 'dash__post-context-meta' }, `${viewingPost.handle || ''}${viewingPost.rel ? ' · ' + viewingPost.rel : ''}`),
+      ]),
+      el('button', { class: 'dash__post-context-clear', type: 'button', onclick: () => goAnalytics() }, [
+        document.createTextNode('Account overview'),
+        el('span', { html: icon('i-arrow-right') }),
+      ]),
+    ]));
+  }
 
   // KPI strip
   const kpis = isBrand ? [
@@ -4587,12 +4708,7 @@ function bindDemoControls() {
   // Analytics sidebar button
   const analyticsBtn = document.querySelector('.sidebar__btn[data-nav="analytics"]');
   if (analyticsBtn) {
-    analyticsBtn.addEventListener('click', () => {
-      renderDashboard();
-      initDashScout();
-      showView('view-dash');
-      setCrumbs(['Dashboard']);
-    });
+    analyticsBtn.addEventListener('click', () => goAnalytics());
   }
   // Home sidebar button
   const homeNavBtn = document.querySelector('.sidebar__btn[data-nav="home"]');
