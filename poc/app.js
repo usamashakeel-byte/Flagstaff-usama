@@ -1795,15 +1795,29 @@ function renderKBWebProfileCard(card, brand, showActions, isBrandActive) {
     { id: 'web-voice',      build: () => buildKBWebTextSection('VOICE & COMMUNICATION', (wp.voice || []).join(', ')) },
   ];
 
+  // Sections gate on the reveal set: not yet revealed → shimmer skeleton;
+  // revealed → real content swaps in (same rhythm as the X-account card).
+  const reveal = state.kb.kbReveal || new Set();
   sections.forEach(({ id, build }, i) => {
-    if (card.querySelector(`[data-kbs="${id}"]`)) return;
+    const existing = card.querySelector(`[data-kbs="${id}"]`);
+    const revealed = reveal.has(id);
     const footer = card.querySelector('.kb-card__actions');
-    const section = build();
-    section.dataset.kbs = id;
-    if (footer) card.insertBefore(section, footer);
-    else card.appendChild(section);
-    const delay = 60 + i * 80;
-    requestAnimationFrame(() => setTimeout(() => section.classList.add('kbs--visible'), delay));
+    if (!existing) {
+      const section = revealed ? build() : buildKBWebShimmerSection(id);
+      section.dataset.kbs = id;
+      if (footer) card.insertBefore(section, footer);
+      else card.appendChild(section);
+      const delay = 60 + i * 80;
+      requestAnimationFrame(() => setTimeout(() => section.classList.add('kbs--visible'), delay));
+    } else if (revealed && existing.classList.contains('kbs--shimmer')) {
+      const real = build();
+      real.dataset.kbs = id;
+      existing.classList.add('kbs--exiting');
+      setTimeout(() => {
+        existing.replaceWith(real);
+        requestAnimationFrame(() => setTimeout(() => real.classList.add('kbs--visible'), 20));
+      }, 220);
+    }
   });
 
   // Action footer — Looks right / Not quite — only while active + awaiting confirm.
@@ -1881,6 +1895,24 @@ function buildKBWebStatsSection(items) {
     el('div', { class: 'kbs__eyebrow' }, 'CREDIBILITY'),
     el('div', { class: 'kbs__stats' }, tiles),
   ]);
+}
+
+// Empty shimmer skeleton for a web section while it's still "loading".
+function buildKBWebShimmerSection(id) {
+  const labels = {
+    'web-expertise': 'EXPERTISE', 'web-signature': 'SIGNATURE TOPICS',
+    'web-audience': 'AUDIENCE', 'web-services': 'SERVICES',
+    'web-credibility': 'CREDIBILITY', 'web-style': 'WORKING STYLE',
+    'web-voice': 'VOICE & COMMUNICATION',
+  };
+  const lbl = labels[id];
+  const children = [];
+  if (lbl) children.push(el('div', { class: 'kbs__eyebrow' }, lbl));
+  children.push(el('div', { class: 'kb-shimmer-wrap kb-shimmer-wrap--sm' }, [
+    el('div', { class: 'kb-shimmer-line' }),
+    el('div', { class: 'kb-shimmer-line' }),
+  ]));
+  return el('div', { class: 'kbs kbs--shimmer' }, children);
 }
 
 function buildKBShimmerSection(id) {
@@ -4348,6 +4380,11 @@ async function stepMaterials() {
   // content performance.
   state.kb.aboutSource = 'website';
 
+  // Fix-01: the KB panel appears the moment the user sends the URL — it slides
+  // in showing empty shimmer skeletons while Scout scans the site.
+  if (!document.body.classList.contains('mode-kb-open')) openKBPanel();
+  else renderKB();
+
   const lines = state.accountType === 'brand' ? [
     { icon: 'i-globe',   text: `Loading ${cleanUrl}` },
     { icon: 'i-grid',    text: 'Three product categories live on the site. Sindhi embroidery, Kashmiri shawls, contemporary kurtas.' },
@@ -4366,19 +4403,19 @@ async function stepMaterials() {
 
   // Website preview card — renders like a real site.
   websitePreview(typedUrl);
-  await sleep(600);
 
-  // Bring the KB panel in alongside the website preview so the user watches
-  // Scout's gathered data appear. In the X-connected path it's already open;
-  // this is the moment it appears when X was skipped and a site was shared.
-  if (!document.body.classList.contains('mode-kb-open')) openKBPanel();
-  else renderKB();
+  // Fix-02: as the preview lands in the chat, the About You fields fill in
+  // one after another (same rhythm as the X-account detail card).
   await sleep(300);
-
-  // Render the website-sourced About You card. Its 8 sections animate in
-  // one-by-one via the staggered entry built into renderKBWebProfileCard.
-  renderKB();
-  await sleep(1400);
+  const webOrder = [
+    'web-identity', 'web-summary', 'web-expertise', 'web-signature',
+    'web-audience', 'web-services', 'web-credibility', 'web-style', 'web-voice',
+  ];
+  for (const id of webOrder) {
+    state.kb.kbReveal.add(id);
+    renderKB();
+    await sleep(430);
+  }
 }
 
 async function step7_intel_scan() {
