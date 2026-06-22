@@ -27,7 +27,6 @@ const state = {
     kbReveal: new Set(),   // tracks which brand card sections are unlocked
     brand:     { facts: [], expanded: false },
     trending:  { facts: [], expanded: false },
-    algorithm: { facts: [], expanded: false },
   },
 
   // Identity collected during onboarding (mutable, edits write here)
@@ -1436,7 +1435,7 @@ function renderKBNew(panel) {
     inner = el('div', { class: 'kb-panel__inner' });
     panel.appendChild(inner);
 
-    const order = ['brand', 'trending', 'algorithm'];
+    const order = ['brand', 'trending'];
     order.forEach((kbId, i) => {
       const card = buildKBNewCard(kbId, i === 0);
       inner.appendChild(card);
@@ -1446,7 +1445,7 @@ function renderKBNew(panel) {
   }
 
   // Update each card's content
-  ['brand', 'trending', 'algorithm'].forEach(kbId => {
+  ['brand', 'trending'].forEach(kbId => {
     const card = inner.querySelector(`[data-kb-card="${kbId}"]`);
     if (card) updateKBNewCard(card, kbId);
   });
