@@ -2354,8 +2354,34 @@ function buildRecentActivity(isBrand) {
       c.classList.toggle('is-near', Math.abs(i - bestIdx) === 1);
     });
   }
+  // Start with a middle card focused so both sides are filled (no empty edge).
+  function centerMiddle() {
+    const cards = Array.from(carousel.querySelectorAll('.success-post'));
+    if (!cards.length) return;
+    const mid = cards[Math.floor((cards.length - 1) / 2)];
+    const cRect = carousel.getBoundingClientRect();
+    const mRect = mid.getBoundingClientRect();
+    const delta = (mRect.left + mRect.width / 2) - (cRect.left + cRect.width / 2);
+    const prevBehaviour = carousel.style.scrollBehavior;
+    carousel.style.scrollBehavior = 'auto';   // jump, don't animate, on first paint
+    carousel.scrollLeft += delta;
+    carousel.style.scrollBehavior = prevBehaviour;
+    updateActive();
+  }
+
   carousel.addEventListener('scroll', () => requestAnimationFrame(updateActive));
-  requestAnimationFrame(updateActive);
+  // Let a vertical mouse wheel scroll the carousel left/right (trackpads can
+  // already scroll horizontally). Releases to the page when at either end.
+  carousel.addEventListener('wheel', (e) => {
+    if (carousel.classList.contains('is-expanded')) return;
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;   // horizontal handled natively
+    const atStart = carousel.scrollLeft <= 0 && e.deltaY < 0;
+    const atEnd = carousel.scrollLeft + carousel.clientWidth >= carousel.scrollWidth - 1 && e.deltaY > 0;
+    if (atStart || atEnd) return;                          // let the page scroll past the ends
+    carousel.scrollLeft += e.deltaY;
+    e.preventDefault();
+  }, { passive: false });
+  requestAnimationFrame(centerMiddle);
 
   // "View posts" toggle: smoothly expands the carousel into a 2-column grid.
   const toggle = el('button', { class: 'dash__recent-toggle', type: 'button' }, [
